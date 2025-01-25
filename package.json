@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://Farouk-chtioui.github.io/number-guessing-game",
+  "homepage": "https://farouk-chtioui.github.io/number-guessing-game/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
