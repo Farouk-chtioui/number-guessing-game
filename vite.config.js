@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: './',  // Changed this line for simple deployment
+  base: '/number-guessing-game/',  // Changed back to repository name
   build: {
     outDir: 'dist',
-    sourcemap: true
+    assetsDir: 'assets',
+    emptyOutDir: true
   }
 });
