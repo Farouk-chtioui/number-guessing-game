@@ -49,14 +49,20 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     return `${bulls}T ${cows}V`;
   };
 
+  const validateGuess = (guess) => {
+    if (!/^\d{4}$/.test(guess)) return false;
+    const digits = new Set(guess.split(''));
+    return digits.size === 4;
+  };
+
   const handleSubmitGuess = async () => {
     if (currentTurn !== gameState.playerId) {
       alert("It's not your turn!");
       return;
     }
 
-    if (!/^\d{4}$/.test(guess)) {
-      alert('Please enter a valid 4-digit number');
+    if (!validateGuess(guess)) {
+      alert('Please enter a valid 4-digit number with no repeating digits');
       return;
     }
 
@@ -96,6 +102,13 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     setGuess('');
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      handleSubmitGuess();
+    }
+  };
+
   const handleBackToLobby = () => {
     onBackToLobby();
   };
@@ -106,6 +119,9 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     <div className="section">
       <div className="player-info">
         <span>{game.player1}</span> vs <span>{game.player2 || 'Waiting...'}</span>
+      </div>
+      <div className="player-number">
+        Your number: <span className="secret-number">{gameState.secretNumber}</span>
       </div>
       {game.winner && (
         <>
@@ -129,6 +145,7 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
           type="text"
           value={guess}
           onChange={(e) => setGuess(e.target.value)}
+          onKeyDown={handleKeyDown}
           maxLength={4}
           placeholder="Enter your guess"
           disabled={currentTurn !== gameState.playerId || game.winner}
@@ -145,6 +162,7 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
           <h3>{game.player1}'s Guesses</h3>
           {history
             .filter(g => g.player === 1)
+            .sort((a, b) => b.timestamp - a.timestamp) // Sort in reverse chronological order
             .map((g, i) => (
               <div key={i} className="guess-item player-1">
                 {g.guess} - {g.result}
@@ -155,6 +173,7 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
           <h3>{game.player2 || 'Player 2'}'s Guesses</h3>
           {history
             .filter(g => g.player === 2)
+            .sort((a, b) => b.timestamp - a.timestamp) // Sort in reverse chronological order
             .map((g, i) => (
               <div key={i} className="guess-item player-2">
                 {g.guess} - {g.result}

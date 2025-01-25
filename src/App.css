@@ -76,6 +76,23 @@ button:disabled {
   padding: 10px;
   background-color: var(--background);
   border-radius: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--background);
+}
+
+.history::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+.history::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 4px;
 }
 
 .player-info {
@@ -254,4 +271,20 @@ button:disabled {
   .history {
     margin-bottom: 1rem;
   }
+}
+
+.player-number {
+  text-align: center;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: var(--background);
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.secret-number {
+  font-weight: bold;
+  color: var(--primary);
+  letter-spacing: 2px;
+  padding: 0 0.5rem;
 }
