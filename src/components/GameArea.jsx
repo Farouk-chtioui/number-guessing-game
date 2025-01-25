@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, addDoc, getDoc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, onSnapshot, addDoc, getDoc, updateDoc, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
@@ -33,6 +33,45 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
 
     return () => unsubscribe();
   }, [gameState.gameId]);
+
+  // Add activity tracking
+  useEffect(() => {
+    if (!game || !gameState.gameId) return;
+    
+    // Update player's last activity
+    const activityInterval = setInterval(async () => {
+      const gameDoc = doc(db, 'games', gameState.gameId);
+      await updateDoc(gameDoc, {
+        [`player${gameState.playerId}LastActive`]: Date.now()
+      });
+    }, 5000);
+
+    // Check for opponent inactivity
+    const inactivityCheck = setInterval(async () => {
+      const gameDoc = doc(db, 'games', gameState.gameId);
+      const gameSnap = await getDoc(gameDoc);
+      const gameData = gameSnap.data();
+      
+      if (gameData.status === 'completed') return;
+
+      const opponentId = gameState.playerId === 1 ? 2 : 1;
+      const lastActive = gameData[`player${opponentId}LastActive`];
+      
+      if (lastActive && Date.now() - lastActive > 10000) {
+        // Opponent inactive for more than 10 seconds
+        await updateDoc(gameDoc, {
+          winner: gameState.playerId,
+          status: 'completed',
+          endReason: 'opponent_inactive'
+        });
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(activityInterval);
+      clearInterval(inactivityCheck);
+    };
+  }, [game, gameState.gameId, gameState.playerId]);
 
   const checkGuess = (guess, actual) => {
     let bulls = 0;
@@ -113,6 +152,21 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     onBackToLobby();
   };
 
+  const handleCancelGame = async () => {
+    try {
+      if (gameState.lobbyId) {
+        await deleteDoc(doc(db, 'lobbies', gameState.lobbyId));
+      }
+      if (gameState.gameId) {
+        await deleteDoc(doc(db, 'games', gameState.gameId));
+      }
+      onBackToLobby();
+    } catch (error) {
+      console.error('Error canceling game:', error);
+      alert('Error canceling game. Please try again.');
+    }
+  };
+
   if (!game) return <div>Loading...</div>;
 
   return (
@@ -123,6 +177,16 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
       <div className="player-number">
         Your number: <span className="secret-number">{gameState.secretNumber}</span>
       </div>
+      
+      {!game.player2 && (
+        <div className="waiting-actions">
+          <p>Waiting for opponent to join...</p>
+          <button className="leave-button" onClick={handleCancelGame}>
+            Cancel Game
+          </button>
+        </div>
+      )}
+
       {game.winner && (
         <>
           <div className="winner-banner">
@@ -133,30 +197,41 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
           </button>
         </>
       )}
-      <div className="turn-indicator">
-        {!game.winner && (
-          currentTurn === gameState.playerId ? 
-            "It's your turn!" : 
-            "Waiting for opponent's move..."
-        )}
-      </div>
-      <div className="guess-area">
-        <input
-          type="text"
-          value={guess}
-          onChange={(e) => setGuess(e.target.value)}
-          onKeyDown={handleKeyDown}
-          maxLength={4}
-          placeholder="Enter your guess"
-          disabled={currentTurn !== gameState.playerId || game.winner}
-        />
-        <button 
-          onClick={handleSubmitGuess}
-          disabled={currentTurn !== gameState.playerId || game.winner}
-        >
-          Submit Guess
-        </button>
-      </div>
+
+      {game.winner && game.endReason === 'opponent_inactive' && (
+        <div className="winner-banner">
+          You won! Opponent left the game.
+        </div>
+      )}
+
+      {!game.winner && (
+        <>
+          <div className="turn-indicator">
+            {currentTurn === gameState.playerId ? 
+              "It's your turn!" : 
+              "Waiting for opponent's move..."
+            }
+          </div>
+          <div className="guess-area">
+            <input
+              type="text"
+              value={guess}
+              onChange={(e) => setGuess(e.target.value)}
+              onKeyDown={handleKeyDown}
+              maxLength={4}
+              placeholder="Enter your guess"
+              disabled={currentTurn !== gameState.playerId || game.winner}
+            />
+            <button 
+              onClick={handleSubmitGuess}
+              disabled={currentTurn !== gameState.playerId || game.winner}
+            >
+              Submit Guess
+            </button>
+          </div>
+        </>
+      )}
+
       <div className="history-container">
         <div className="history player1-history">
           <h3>{game.player1}'s Guesses</h3>

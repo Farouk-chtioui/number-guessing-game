@@ -1,14 +1,77 @@
 :root {
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --success: #22c55e;
+  /* Light theme - Modern clean look */
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --success: #10b981;
   --danger: #ef4444;
   --background: #f8fafc;
   --card: #ffffff;
-  --text: #1e293b;
+  --text: #0f172a;
   --text-light: #64748b;
   --border: #e2e8f0;
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --player1-color: #6366f1;
+  --player2-color: #ec4899;
+  --input-bg: #ffffff;
+  --banner-text: #ffffff;
+  --hover-bg: #f1f5f9;
+}
+
+[data-theme='dark'] {
+  /* Dark theme - Modern sleek look */
+  --primary: #60a5fa;
+  --primary-dark: #3b82f6;
+  --success: #34d399;
+  --danger: #f87171;
+  --background: #0f172a;
+  --card: #1e293b;
+  --text: #f1f5f9;
+  --text-light: #94a3b8;
+  --border: #334155;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  --player1-color: #818cf8;
+  --player2-color: #f472b6;
+  --input-bg: #1e293b;
+  --banner-text: #0f172a;
+  --hover-bg: #334155;
+}
+
+/* Add theme transition */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+  margin: 0;
+  padding: 1rem;
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: var(--card);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  z-index: 1000;
+  color: var(--text);
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
 }
 
 .container {
@@ -18,6 +81,7 @@
   background-color: var(--card);
   border-radius: 1rem;
   box-shadow: var(--shadow);
+  color: var(--text);
 }
 
 h1 {
@@ -35,21 +99,23 @@ h1 {
 input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   font-size: 1rem;
   transition: all 0.2s;
   margin-bottom: 1rem;
+  background-color: var(--input-bg);
+  color: var(--text);
 }
 
 input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 button {
-  background-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
@@ -60,9 +126,9 @@ button {
   transition: all 0.2s;
 }
 
-button:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 button:disabled {
@@ -112,28 +178,75 @@ button:disabled {
 }
 
 .lobby {
-  background-color: var(--background);
-  border-radius: 1rem;
-  padding: 1.5rem;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--primary) 5%, var(--background)) 0%,
+    var(--background) 100%
+  );
+  border-radius: 1.5rem;
+  padding: 2rem;
   margin-top: 2rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.lobby::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--primary) 50%,
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+.lobby h2 {
+  color: var(--primary);
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
 }
 
 .lobby-list {
   display: grid;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  position: relative;
 }
 
 .lobby-item {
-  background-color: var(--card);
-  padding: 1rem;
-  border-radius: 0.75rem;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--card) 97%, var(--primary)) 0%,
+    var(--card) 100%
+  );
+  padding: 1.25rem;
+  border-radius: 1rem;
   box-shadow: var(--shadow);
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
 }
 
 .lobby-item:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
+  border-color: var(--primary);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--card) 95%, var(--primary)) 0%,
+    var(--card) 100%
+  );
+  box-shadow: 0 8px 16px -4px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .lobby-info {
@@ -155,26 +268,33 @@ button:disabled {
 
 .buttons {
   display: flex;
-  gap: 10px;
+  gap: 1rem;
   justify-content: center;
   margin-top: 10px;
 }
 
 .winner-banner {
-  background-color: var(--success);
-  color: white;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--banner-text);
   padding: 1rem;
   border-radius: 0.75rem;
   text-align: center;
   animation: slideDown 0.5s ease-out;
+  box-shadow: var(--shadow);
+}
+
+.winner-banner[data-reason="opponent_inactive"] {
+  background-color: var(--text-light);
 }
 
 .turn-indicator {
-  background-color: var(--background);
+  background: linear-gradient(to right, var(--hover-bg) 0%, var(--card) 100%);
   padding: 1rem;
   border-radius: 0.75rem;
   text-align: center;
   margin: 1rem 0;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .guess-area {
@@ -189,6 +309,8 @@ button:disabled {
   margin: 0.5rem 0;
   border-radius: 0.5rem;
   transition: transform 0.2s;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
 }
 
 .guess-item:hover {
@@ -196,13 +318,23 @@ button:disabled {
 }
 
 .guess-item.player-1 {
-  background-color: rgba(99, 102, 241, 0.1);
-  border-left: 4px solid var(--primary);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--player1-color) 8%, var(--card)) 0%,
+    var(--card) 100%
+  );
+  border-left: 4px solid var(--player1-color);
+  color: var(--text);
 }
 
 .guess-item.player-2 {
-  background-color: rgba(239, 68, 68, 0.1);
-  border-left: 4px solid var(--danger);
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--player2-color) 8%, var(--card)) 0%,
+    var(--card) 100%
+  );
+  border-left: 4px solid var(--player2-color);
+  color: var(--text);
 }
 
 @keyframes fadeIn {
@@ -277,14 +409,47 @@ button:disabled {
   text-align: center;
   margin: 1rem 0;
   padding: 0.75rem;
-  background-color: var(--background);
+  background: linear-gradient(to right, var(--hover-bg) 0%, var(--card) 100%);
   border-radius: 0.5rem;
   font-size: 1.1rem;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .secret-number {
   font-weight: bold;
-  color: var(--primary);
+  color: var(--player1-color); /* This will now use the blue color */
   letter-spacing: 2px;
   padding: 0 0.5rem;
+}
+
+.leave-button {
+  background: linear-gradient(135deg, var(--danger) 0%, color-mix(in srgb, var(--danger) 70%, black) 100%);
+  color: white;
+}
+
+.leave-button:hover:not(:disabled) {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--danger) 25%, transparent);
+}
+
+.waiting-actions {
+  text-align: center;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: linear-gradient(to right, var(--hover-bg) 0%, var(--card) 100%);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+}
+
+.waiting-actions p {
+  margin-bottom: 1rem;
+  color: var(--text-light);
+}
+
+@media (max-width: 640px) {
+  .theme-toggle {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
 }

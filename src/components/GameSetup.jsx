@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-function GameSetup({ setGameState }) {
+function GameSetup({ setGameState, onLeaveLobby }) {
   const [playerName, setPlayerName] = useState('');
   const [secretNumber, setSecretNumber] = useState('');
 
