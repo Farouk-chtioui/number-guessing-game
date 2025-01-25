@@ -164,6 +164,14 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
         Your number: <span className="secret-number">{gameState.secretNumber}</span>
       </div>
       
+      {game.winner && (
+        <div className="player-number opponent-number">
+          Opponent's number: <span className="secret-number">
+            {gameState.playerId === 1 ? game.player2Number : game.player1Number}
+          </span>
+        </div>
+      )}
+
       <div className="game-controls">
         {!game.winner && (
           <button className="leave-button" onClick={handleLeaveGame}>

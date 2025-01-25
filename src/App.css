@@ -463,3 +463,13 @@ button:disabled {
   padding: 0.5rem;
   border-radius: 0.5rem;
 }
+
+/* Add styles for the opponent's number display */
+.opponent-number {
+  background: linear-gradient(to right, 
+    color-mix(in srgb, var(--primary) 8%, var(--card)) 0%,
+    var(--card) 100%
+  );
+  border: 1px solid var(--primary);
+  animation: fadeIn 0.5s ease-out;
+}
