@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, addDoc, getDoc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 
-function GameArea({ gameState }) {
+function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
   const [guess, setGuess] = useState('');
   const [game, setGame] = useState(null);
   const [history, setHistory] = useState([]);
@@ -96,6 +96,10 @@ function GameArea({ gameState }) {
     setGuess('');
   };
 
+  const handleBackToLobby = () => {
+    onBackToLobby();
+  };
+
   if (!game) return <div>Loading...</div>;
 
   return (
@@ -104,9 +108,14 @@ function GameArea({ gameState }) {
         <span>{game.player1}</span> vs <span>{game.player2 || 'Waiting...'}</span>
       </div>
       {game.winner && (
-        <div className="winner-banner">
-          {game.winner === gameState.playerId ? 'You won!' : 'Your opponent won!'}
-        </div>
+        <>
+          <div className="winner-banner">
+            {game.winner === gameState.playerId ? 'You won!' : 'Your opponent won!'}
+          </div>
+          <button className="back-button" onClick={handleBackToLobby}>
+            Back to Lobby
+          </button>
+        </>
       )}
       <div className="turn-indicator">
         {!game.winner && (
@@ -131,12 +140,27 @@ function GameArea({ gameState }) {
           Submit Guess
         </button>
       </div>
-      <div className="history">
-        {history.map((g, i) => (
-          <div key={i} className={`guess-item player-${g.player}`}>
-            Player {g.player}: {g.guess} - {g.result}
-          </div>
-        ))}
+      <div className="history-container">
+        <div className="history player1-history">
+          <h3>{game.player1}'s Guesses</h3>
+          {history
+            .filter(g => g.player === 1)
+            .map((g, i) => (
+              <div key={i} className="guess-item player-1">
+                {g.guess} - {g.result}
+              </div>
+            ))}
+        </div>
+        <div className="history player2-history">
+          <h3>{game.player2 || 'Player 2'}'s Guesses</h3>
+          {history
+            .filter(g => g.player === 2)
+            .map((g, i) => (
+              <div key={i} className="guess-item player-2">
+                {g.guess} - {g.result}
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   );

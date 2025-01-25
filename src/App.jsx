@@ -77,6 +77,18 @@ function App() {
     }
   };
 
+  const handleBackToLobby = () => {
+    setGameState({
+      isPlaying: false,
+      inLobby: true,
+      gameId: null,
+      lobbyId: null,
+      playerId: null,
+      playerName: '',
+      secretNumber: ''
+    });
+  };
+
   return (
     <div className="container">
       <h1>Number Guessing Game</h1>
@@ -86,7 +98,7 @@ function App() {
           <Lobby onJoinGame={handleJoinGame} />
         </>
       )}
-      {gameState.isPlaying && <GameArea gameState={gameState} />}
+      {gameState.isPlaying && <GameArea gameState={gameState} onBackToLobby={handleBackToLobby} />}
     </div>
   );
 }
