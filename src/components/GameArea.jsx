@@ -34,44 +34,7 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     return () => unsubscribe();
   }, [gameState.gameId]);
 
-  // Add activity tracking
-  useEffect(() => {
-    if (!game || !gameState.gameId) return;
-    
-    // Update player's last activity
-    const activityInterval = setInterval(async () => {
-      const gameDoc = doc(db, 'games', gameState.gameId);
-      await updateDoc(gameDoc, {
-        [`player${gameState.playerId}LastActive`]: Date.now()
-      });
-    }, 5000);
-
-    // Check for opponent inactivity
-    const inactivityCheck = setInterval(async () => {
-      const gameDoc = doc(db, 'games', gameState.gameId);
-      const gameSnap = await getDoc(gameDoc);
-      const gameData = gameSnap.data();
-      
-      if (gameData.status === 'completed') return;
-
-      const opponentId = gameState.playerId === 1 ? 2 : 1;
-      const lastActive = gameData[`player${opponentId}LastActive`];
-      
-      if (lastActive && Date.now() - lastActive > 10000) {
-        // Opponent inactive for more than 10 seconds
-        await updateDoc(gameDoc, {
-          winner: gameState.playerId,
-          status: 'completed',
-          endReason: 'opponent_inactive'
-        });
-      }
-    }, 5000);
-
-    return () => {
-      clearInterval(activityInterval);
-      clearInterval(inactivityCheck);
-    };
-  }, [game, gameState.gameId, gameState.playerId]);
+  // Remove the activity tracking useEffect entirely
 
   const checkGuess = (guess, actual) => {
     let bulls = 0;
@@ -167,6 +130,29 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     }
   };
 
+  const handleLeaveGame = async () => {
+    try {
+      if (gameState.gameId) {
+        const gameDoc = doc(db, 'games', gameState.gameId);
+        const gameData = (await getDoc(gameDoc)).data();
+        
+        // Update game to show other player as winner if game is still active
+        if (gameData && gameData.status !== 'completed') {
+          const otherPlayerId = gameState.playerId === 1 ? 2 : 1;
+          await updateDoc(gameDoc, {
+            winner: otherPlayerId,
+            status: 'completed',
+            endReason: 'player_left'
+          });
+        }
+      }
+      onBackToLobby();
+    } catch (error) {
+      console.error('Error leaving game:', error);
+      alert('Error leaving game. Please try again.');
+    }
+  };
+
   if (!game) return <div>Loading...</div>;
 
   return (
@@ -178,24 +164,25 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
         Your number: <span className="secret-number">{gameState.secretNumber}</span>
       </div>
       
-      {!game.player2 && (
-        <div className="waiting-actions">
-          <p>Waiting for opponent to join...</p>
-          <button className="leave-button" onClick={handleCancelGame}>
-            Cancel Game
+      <div className="game-controls">
+        {!game.winner && (
+          <button className="leave-button" onClick={handleLeaveGame}>
+            Leave Game
           </button>
-        </div>
-      )}
-
-      {game.winner && (
-        <>
-          <div className="winner-banner">
-            {game.winner === gameState.playerId ? 'You won!' : 'Your opponent won!'}
-          </div>
+        )}
+        {game.winner && (
           <button className="back-button" onClick={handleBackToLobby}>
             Back to Lobby
           </button>
-        </>
+        )}
+      </div>
+
+      {game.winner && (
+        <div className="winner-banner">
+          {game.winner === gameState.playerId ? 'You won!' : 
+           game.endReason === 'player_left' ? 'Opponent left the game' : 
+           'Your opponent won!'}
+        </div>
       )}
 
       {game.winner && game.endReason === 'opponent_inactive' && (

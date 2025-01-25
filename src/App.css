@@ -330,7 +330,7 @@ button:disabled {
 .guess-item.player-2 {
   background: linear-gradient(
     to right,
-    color-mix(in srgb, var(--player2-color) 8%, var(--card)) 0%,
+    color-mix(in srgb, var(--player2-color) 8%, var (--card)) 0%,
     var(--card) 100%
   );
   border-left: 4px solid var(--player2-color);
@@ -452,4 +452,14 @@ button:disabled {
     top: 0.5rem;
     left: 0.5rem;
   }
+}
+
+/* Add styles for the game controls container */
+.game-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
 }
