@@ -66,62 +66,56 @@ function App() {
   }, []);
 
   const handleJoinGame = async (lobby) => {
-    if (lobby.status !== 'waiting') {
-      alert('This game is no longer available');
-      return;
-    }
-
-    const playerName = prompt('Enter your name:');
-    if (!playerName) return;
-
-    const secretNumber = prompt('Enter your 4-digit number (no repeating digits):');
-    if (!secretNumber || !/^\d{4}$/.test(secretNumber) || new Set(secretNumber).size !== 4) {
-      alert('Please enter a valid 4-digit number with no repeating digits');
-      return;
-    }
-
     try {
-      // Find the game associated with this lobby
-      const gamesRef = collection(db, 'games');
-      const q = query(gamesRef, where('lobbyId', '==', lobby.id));
-      const gameSnap = await getDocs(q);
+      const { joiningPlayer } = lobby;
       
-      if (gameSnap.empty) {
-        throw new Error('Game not found');
+      // First, find the game associated with this lobby
+      const gamesRef = collection(db, 'games');
+      const gameQuery = query(gamesRef, where('lobbyId', '==', lobby.id));
+      const gameSnapshot = await getDocs(gameQuery);
+      
+      if (gameSnapshot.empty) {
+        alert('Game not found');
+        return;
       }
 
-      const gameDoc = gameSnap.docs[0];
+      const gameDoc = gameSnapshot.docs[0];
       const gameData = gameDoc.data();
 
-      if (gameData.status !== 'waiting') {
-        throw new Error('Game is no longer available');
+      if (gameData.player2) {
+        alert('This game is no longer available');
+        return;
       }
 
-      // Update game with player 2 info
+      // Update game document first
       await updateDoc(doc(db, 'games', gameDoc.id), {
-        player2: playerName,
-        player2Number: secretNumber,
-        status: 'playing'
-      });
-
-      // Update lobby status
-      await updateDoc(doc(db, 'lobbies', lobby.id), {
+        player2: joiningPlayer.name,
+        player2Number: joiningPlayer.secretNumber,
         status: 'playing',
-        player2: playerName
+        lastActive: Date.now()
       });
 
+      // Then update lobby document
+      await updateDoc(doc(db, 'lobbies', lobby.id), {
+        player2: joiningPlayer.name,
+        status: 'playing',
+        lastActive: Date.now()
+      });
+
+      // Update local state last
       setGameState({
         isPlaying: true,
         inLobby: false,
         gameId: gameDoc.id,
         lobbyId: lobby.id,
         playerId: 2,
-        playerName,
-        secretNumber
+        playerName: joiningPlayer.name,
+        secretNumber: joiningPlayer.secretNumber,
+        gameMode: lobby.gameMode
       });
     } catch (error) {
       console.error('Error joining game:', error);
-      alert(error.message || 'Error joining game. Please try again.');
+      alert('Unable to join game. Please try again.');
     }
   };
 
@@ -157,13 +151,16 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className="container bg-gradient-to-br from-blue-50 to-blue-100 dark:from-slate-800 dark:to-slate-900">
       <ThemeToggle />
-      <h1>Number Guessing Game</h1>
+      <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400">Number Guessing Game</h1>
       {!gameState.isPlaying && gameState.inLobby && (
         <>
           <GameSetup setGameState={setGameState} onLeaveLobby={handleLeaveLobby} />
-          <Lobby onJoinGame={handleJoinGame} />
+          <Lobby 
+            onJoinGame={handleJoinGame} 
+            setGameState={setGameState} // Add this prop
+          />
         </>
       )}
       {gameState.isPlaying && <GameArea gameState={gameState} onBackToLobby={handleBackToLobby} />}

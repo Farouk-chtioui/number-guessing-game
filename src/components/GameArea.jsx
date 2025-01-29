@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, addDoc, getDoc, updateDoc, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import SpectatorView from './SpectatorView';
 
 function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
+  // Return SpectatorView for spectators
+  if (gameState.playerId === 'spectator') {
+    return <SpectatorView gameState={gameState} onBackToLobby={onBackToLobby} />;
+  }
+
   const [guess, setGuess] = useState('');
   const [game, setGame] = useState(null);
   const [history, setHistory] = useState([]);
@@ -58,7 +64,8 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
   };
 
   const handleSubmitGuess = async () => {
-    if (currentTurn !== gameState.playerId) {
+    // Allow guessing in rapid mode without turn restrictions
+    if (game.gameMode === 'classic' && currentTurn !== gameState.playerId) {
       alert("It's not your turn!");
       return;
     }
@@ -68,40 +75,51 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
       return;
     }
 
-    const gameDoc = doc(db, 'games', gameState.gameId);
-    const gameSnap = await getDoc(gameDoc);
-    const gameData = gameSnap.data();
+    try {
+      const gameDoc = doc(db, 'games', gameState.gameId);
+      const gameData = (await getDoc(gameDoc)).data();
 
-    if (gameData.winner) {
-      alert('Game is already over!');
-      return;
-    }
+      if (gameData.winner) {
+        alert('Game is already over!');
+        return;
+      }
 
-    const opponentNumber = gameState.playerId === 1 ? gameData.player2Number : gameData.player1Number;
-    const result = checkGuess(guess, opponentNumber);
-
-    const guessesRef = collection(db, 'games', gameState.gameId, 'guesses');
-    await addDoc(guessesRef, {
-      player: gameState.playerId,
-      guess,
-      result,
-      timestamp: Date.now()
-    });
-
-    // Check if this guess wins the game
-    if (result === '4T 0V') {
+      // Update last active timestamp
       await updateDoc(gameDoc, {
-        winner: gameState.playerId,
-        status: 'completed'
+        lastActive: Date.now()
       });
-    } else {
-      // Switch turns
-      await updateDoc(gameDoc, {
-        currentTurn: gameState.playerId === 1 ? 2 : 1
-      });
-    }
 
-    setGuess('');
+      const opponentNumber = gameState.playerId === 1 ? gameData.player2Number : gameData.player1Number;
+      const result = checkGuess(guess, opponentNumber);
+
+      const guessesRef = collection(db, 'games', gameState.gameId, 'guesses');
+      await addDoc(guessesRef, {
+        player: gameState.playerId,
+        guess,
+        result,
+        timestamp: Date.now()
+      });
+
+      // Check if this guess wins the game
+      if (result === '4T 0V') {
+        await updateDoc(gameDoc, {
+          winner: gameState.playerId,
+          status: 'completed'
+        });
+      } else {
+        // Only switch turns in classic mode
+        if (game.gameMode === 'classic' && result !== '4T 0V') {
+          await updateDoc(gameDoc, {
+            currentTurn: gameState.playerId === 1 ? 2 : 1
+          });
+        }
+      }
+
+      setGuess('');
+    } catch (error) {
+      console.error('Error submitting guess:', error);
+      alert('Error submitting guess. Please try again.');
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -156,78 +174,103 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
   if (!game) return <div>Loading...</div>;
 
   return (
-    <div className="section">
-      <div className="player-info">
-        <span>{game.player1}</span> vs <span>{game.player2 || 'Waiting...'}</span>
-      </div>
-      <div className="player-number">
-        Your number: <span className="secret-number">{gameState.secretNumber}</span>
-      </div>
-      
-      {game.winner && (
-        <div className="player-number opponent-number">
-          Opponent's number: <span className="secret-number">
-            {gameState.playerId === 1 ? game.player2Number : game.player1Number}
-          </span>
+    <div className="section max-w-4xl mx-auto p-6">
+      {/* Private key display */}
+      {gameState.privateKey && !game.player2 && !isSpectator && (
+        <div className="bg-blue-50 dark:bg-blue-900/50 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-blue-700 dark:text-blue-300 mb-2">
+            Private Game Code
+          </h3>
+          <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded">
+            <code className="font-mono text-lg text-blue-600 dark:text-blue-400">
+              {gameState.privateKey}
+            </code>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(gameState.privateKey);
+                alert('Code copied!');
+              }}
+              className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900 rounded"
+            >
+              📋
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="game-controls">
-        {!game.winner && (
-          <button className="leave-button" onClick={handleLeaveGame}>
-            Leave Game
-          </button>
-        )}
-        {game.winner && (
-          <button className="back-button" onClick={handleBackToLobby}>
-            Back to Lobby
-          </button>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden mb-6">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">{game?.player1} vs {game?.player2 || 'Waiting...'}</h2>
+            {isSpectator && (
+              <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200
+                             px-3 py-1 rounded-full text-sm font-medium">
+                Spectating
+              </span>
+            )}
+          </div>
+          
+          {!isSpectator && (
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+              <span className="text-gray-600 dark:text-gray-300">Your number: </span>
+              <span className="font-mono font-bold text-lg">{gameState.secretNumber}</span>
+            </div>
+          )}
+        </div>
+
+        {!game.winner && !isSpectator && (
+          <div className="p-6 bg-gray-50 dark:bg-slate-700/50">
+            <div className="mb-4 text-center font-medium">
+              {game.gameMode === 'classic' ? (
+                currentTurn === gameState.playerId ? 
+                  "🎲 It's your turn!" : 
+                  "⌛ Waiting for opponent's move..."
+              ) : (
+                "⚡ Rapid Mode - Make your guess!"
+              )}
+            </div>
+            
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={guess}
+                onChange={(e) => setGuess(e.target.value)}
+                onKeyDown={handleKeyDown}
+                maxLength={4}
+                placeholder="Enter your guess"
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 
+                         dark:border-gray-600 focus:border-blue-500 
+                         dark:focus:border-blue-400 focus:ring-2 
+                         focus:ring-blue-500/20"
+                disabled={game.gameMode === 'classic' && 
+                         currentTurn !== gameState.playerId || game.winner}
+              />
+              <button 
+                onClick={handleSubmitGuess}
+                disabled={game.gameMode === 'classic' && 
+                         currentTurn !== gameState.playerId || game.winner}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg 
+                         hover:bg-blue-600 disabled:opacity-50 
+                         disabled:cursor-not-allowed transition-colors"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
+      {/* Winner banner */}
       {game.winner && (
-        <div className="winner-banner">
+        <div className="winner-banner mb-6">
           {game.winner === gameState.playerId ? 'You won!' : 
            game.endReason === 'player_left' ? 'Opponent left the game' : 
            'Your opponent won!'}
         </div>
       )}
 
-      {game.winner && game.endReason === 'opponent_inactive' && (
-        <div className="winner-banner">
-          You won! Opponent left the game.
-        </div>
-      )}
-
-      {!game.winner && (
-        <>
-          <div className="turn-indicator">
-            {currentTurn === gameState.playerId ? 
-              "It's your turn!" : 
-              "Waiting for opponent's move..."
-            }
-          </div>
-          <div className="guess-area">
-            <input
-              type="text"
-              value={guess}
-              onChange={(e) => setGuess(e.target.value)}
-              onKeyDown={handleKeyDown}
-              maxLength={4}
-              placeholder="Enter your guess"
-              disabled={currentTurn !== gameState.playerId || game.winner}
-            />
-            <button 
-              onClick={handleSubmitGuess}
-              disabled={currentTurn !== gameState.playerId || game.winner}
-            >
-              Submit Guess
-            </button>
-          </div>
-        </>
-      )}
-
-      <div className="history-container">
+      {/* Game history */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="history player1-history">
           <h3>{game.player1}'s Guesses</h3>
           {history
@@ -250,6 +293,28 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
               </div>
             ))}
         </div>
+      </div>
+
+      {/* Game controls */}
+      <div className="mt-6 flex justify-center gap-4">
+        {!isSpectator && !game.winner && (
+          <button 
+            onClick={handleLeaveGame}
+            className="px-6 py-2 bg-red-500 text-white rounded-lg 
+                     hover:bg-red-600 transition-colors"
+          >
+            Leave Game
+          </button>
+        )}
+        {(game.winner || isSpectator) && (
+          <button 
+            onClick={handleBackToLobby}
+            className="px-6 py-2 bg-gray-500 text-white rounded-lg 
+                     hover:bg-gray-600 transition-colors"
+          >
+            Back to Lobby
+          </button>
+        )}
       </div>
     </div>
   );
