@@ -37,6 +37,23 @@ function GameSetup({ setGameState, onLeaveLobby }) {
       const generatedKey = isPrivate ? generatePrivateKey() : null;
       setPrivateKey(generatedKey);
       
+      // Create game document first
+      const gamesRef = collection(db, 'games');
+      const gameDoc = await addDoc(gamesRef, {
+        player1: playerName,
+        player1Number: secretNumber,
+        player2: null,
+        player2Number: null,
+        status: 'waiting',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        firstTurn,
+        currentTurn: firstTurn,
+        gameMode,
+        lastActive: timestamp
+      });
+
+      // Then create lobby with game reference
       const lobbiesRef = collection(db, 'lobbies');
       const lobbyDoc = await addDoc(lobbiesRef, {
         player1: playerName,
@@ -49,25 +66,12 @@ function GameSetup({ setGameState, onLeaveLobby }) {
         gameMode,
         lastActive: timestamp,
         privateKey: generatedKey,
+        gameId: gameDoc.id // Add reference to game
       });
 
-      const gamesRef = collection(db, 'games');
-      const gameDoc = await addDoc(gamesRef, {
-        lobbyId: lobbyDoc.id,
-        player1: playerName,
-        player1Number: secretNumber,
-        player2: null,
-        status: 'waiting',
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        firstTurn,
-        currentTurn: firstTurn,
-        gameMode,
-        lastActive: timestamp
-      });
-
-      await updateDoc(lobbyDoc, {
-        gameId: gameDoc.id
+      // Update game with lobby reference
+      await updateDoc(gameDoc, {
+        lobbyId: lobbyDoc.id
       });
 
       setGameState({

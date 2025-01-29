@@ -23,10 +23,10 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
 
       if (currentTime - data.lastActive > timeoutDuration) {
         try {
-          await deleteDoc(doc.ref);
           if (data.gameId) {
             await deleteDoc(doc(db, 'games', data.gameId));
           }
+          await deleteDoc(doc.ref);
         } catch (error) {
           console.error('Error cleaning up idle lobby:', error);
         }
@@ -38,8 +38,7 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
     // Set up listener for public lobbies
     const q = query(
       collection(db, 'lobbies'),
-      where('status', '==', 'waiting'),
-      where('isPrivate', '==', false)
+      where('status', '==', 'waiting')
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
