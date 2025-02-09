@@ -4,6 +4,7 @@ import './EasterEgg.css';
 function EasterEgg() {
   const [answer, setAnswer] = useState(null);
   const [showHearts, setShowHearts] = useState(false);
+  const [showFireworks, setShowFireworks] = useState(false);
 
   useEffect(() => {
     // Create floating hearts
@@ -24,13 +25,40 @@ function EasterEgg() {
     }
   }, [showHearts]);
 
+  const createFirework = () => {
+    const firework = document.createElement('div');
+    firework.className = 'firework';
+    firework.style.left = Math.random() * 100 + 'vw';
+    firework.style.animationDuration = Math.random() * 1 + 0.5 + 's';
+    document.body.appendChild(firework);
+    setTimeout(() => firework.remove(), 1000);
+  };
+
+  const createRosePetal = () => {
+    const petal = document.createElement('div');
+    petal.className = 'rose-petal';
+    petal.innerHTML = '🌸';
+    petal.style.left = Math.random() * 100 + 'vw';
+    petal.style.animationDuration = Math.random() * 3 + 2 + 's';
+    document.body.appendChild(petal);
+    setTimeout(() => petal.remove(), 5000);
+  };
+
   const handleAnswer = (res) => {
-    setAnswer(res === 'yes' ? 'I LOVE YOU! ❤️' : 'Are you sure Baby girl? 😏🔫');
-    if (res === 'yes') setShowHearts(true);
+    if (res === 'yes') {
+      setAnswer('I LOVE YOU! ❤️');
+      setShowHearts(true);
+      setShowFireworks(true);
+      // Start fireworks and rose petals
+      setInterval(createFirework, 300);
+      setInterval(createRosePetal, 400);
+    } else {
+      setAnswer('Are you sure Baby girl? 😏🔫');
+    }
   };
 
   return (
-    <div className="easter-egg-container">
+    <div className={`easter-egg-container ${answer === 'I LOVE YOU! ❤️' ? 'success' : ''}`}>
       <div className="content-wrapper">
         <div className="title-text">
           My Dearest...

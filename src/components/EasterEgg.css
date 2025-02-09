@@ -58,6 +58,7 @@
 .yes-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 0 20px #ff3366;
+  animation: rainbow 3s linear infinite;
 }
 
 .no-btn {
@@ -74,6 +75,11 @@
   font-size: 3rem;
   margin-top: 2rem;
   animation: bounceIn 1s ease-out;
+  background: linear-gradient(45deg, #ff0066, #ff4093, #ff66cc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(255,255,255,0.3);
 }
 
 .floating-heart {
@@ -81,6 +87,28 @@
   font-size: 2rem;
   pointer-events: none;
   animation: floatUp 5s linear;
+}
+
+.success {
+  animation: heartbeat 1.5s ease-in-out infinite;
+  background: radial-gradient(circle, #ff1464 0%, #000000 100%);
+}
+
+.firework {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: explode 1s ease-out;
+  background: gold;
+}
+
+.rose-petal {
+  position: fixed;
+  font-size: 1.5rem;
+  pointer-events: none;
+  animation: falling 5s linear;
 }
 
 @keyframes fadeIn {
@@ -139,4 +167,41 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.1); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(20);
+    opacity: 0;
+  }
+}
+
+@keyframes falling {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes rainbow {
+  0% { background: linear-gradient(45deg, #ff0000, #ff66cc); }
+  33% { background: linear-gradient(45deg, #ff66cc, #ff0066); }
+  66% { background: linear-gradient(45deg, #ff0066, #ff3366); }
+  100% { background: linear-gradient(45deg, #ff3366, #ff0000); }
 }
