@@ -1,3 +1,4 @@
+// NOTE: This file appears to be a duplicate. Consider removing or archiving it to avoid conflicts.
 import { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';

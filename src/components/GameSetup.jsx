@@ -66,7 +66,7 @@ function GameSetup({ setGameState, onLeaveLobby }) {
         gameMode,
         lastActive: timestamp,
         privateKey: generatedKey,
-        gameId: gameDoc.id // Add reference to game
+        gameId: gameDoc.id
       });
 
       // Update game with lobby reference
@@ -82,7 +82,7 @@ function GameSetup({ setGameState, onLeaveLobby }) {
         playerName,
         secretNumber,
         gameMode,
-        privateKey: generatedKey // Add private key to game state
+        privateKey: generatedKey
       });
     } catch (error) {
       console.error('Error creating game:', error);

@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, addDoc, getDoc, updateDoc, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import SpectatorView from './SpectatorView';
+import EasterEgg from './EasterEgg';
 
 function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
+  // Declare isSpectator based on gameState.playerId
+  const isSpectator = gameState.playerId === 'spectator';
+
   // Return SpectatorView for spectators
-  if (gameState.playerId === 'spectator') {
+  if (isSpectator) {
     return <SpectatorView gameState={gameState} onBackToLobby={onBackToLobby} />;
   }
 
@@ -171,6 +175,11 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
     }
   };
 
+  // Updated easter egg condition to show if game ended and either player's name is "reff" (case-insensitive)
+  const showEasterEgg = game && game.winner && (
+    (game.player1?.toLowerCase() === 'reff') || (game.player2?.toLowerCase() === 'reff')
+  );
+
   if (!game) return <div>Loading...</div>;
 
   return (
@@ -316,6 +325,8 @@ function GameArea({ gameState, onBackToLobby }) {  // Add onBackToLobby prop
           </button>
         )}
       </div>
+
+      {showEasterEgg && <EasterEgg />}
     </div>
   );
 }

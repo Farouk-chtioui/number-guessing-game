@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 
 function SpectatorView({ gameState, onBackToLobby }) {
@@ -9,7 +9,8 @@ function SpectatorView({ gameState, onBackToLobby }) {
   useEffect(() => {
     const gameDoc = doc(db, 'games', gameState.gameId);
     const unsubscribe = onSnapshot(gameDoc, (snapshot) => {
-      setGame(snapshot.data());
+      const data = snapshot.data();
+      setGame(data);
     });
     return () => unsubscribe();
   }, [gameState.gameId]);
@@ -17,17 +18,17 @@ function SpectatorView({ gameState, onBackToLobby }) {
   useEffect(() => {
     const guessesRef = collection(db, 'games', gameState.gameId, 'guesses');
     const q = query(guessesRef, orderBy('timestamp'));
-    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const guesses = [];
-      snapshot.forEach((doc) => guesses.push(doc.data()));
+      snapshot.forEach((doc) => {
+        guesses.push(doc.data());
+      });
       setHistory(guesses);
     });
-
     return () => unsubscribe();
   }, [gameState.gameId]);
 
-  if (!game) return <div>Loading...</div>;
+  if (!game) return <div>Loading game...</div>;
 
   return (
     <div className="section max-w-4xl mx-auto p-6">
@@ -35,7 +36,7 @@ function SpectatorView({ gameState, onBackToLobby }) {
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">
-              {game.player1} vs {game.player2}
+              {game.player1} vs {game.player2 || 'Waiting...'}
             </h2>
             <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200
                            px-3 py-1 rounded-full text-sm font-medium">
