@@ -1,48 +1,64 @@
 import { useState, useEffect } from 'react';
+import './EasterEgg.css';
 
 function EasterEgg() {
   const [answer, setAnswer] = useState(null);
+  const [showHearts, setShowHearts] = useState(false);
 
-  // Dummy emoji animation effect
   useEffect(() => {
-    // ...you may add emoji flying animations...
-  }, []);
+    // Create floating hearts
+    const createHeart = () => {
+      const heart = document.createElement('div');
+      heart.className = 'floating-heart';
+      heart.innerHTML = ['❤️', '💖', '💕', '💝', '💗'][Math.floor(Math.random() * 5)];
+      heart.style.left = Math.random() * 100 + 'vw';
+      heart.style.animationDuration = Math.random() * 3 + 2 + 's';
+      document.body.appendChild(heart);
+      
+      setTimeout(() => heart.remove(), 5000);
+    };
+
+    if (showHearts) {
+      const interval = setInterval(createHeart, 300);
+      return () => clearInterval(interval);
+    }
+  }, [showHearts]);
 
   const handleAnswer = (res) => {
-    setAnswer(res === 'yes' ? 'yaaay' : 'no to no');
+    setAnswer(res === 'yes' ? 'I LOVE YOU! ❤️' : 'Are you sure Baby girl? 😏🔫');
+    if (res === 'yes') setShowHearts(true);
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0,
-      width: '100%', height: '100%',
-      background: 'rgba(0,0,0,0.85)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      flexDirection: 'column',
-      color: 'white',
-      zIndex: 9999
-    }}>
-      {/* Floating love emojis can be animated with CSS or JS */}
-      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-        ❤️ 💕 😍 💖
-      </div>
-      
-      <div style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>
-        Will you be my valontine?
-      </div>
-      <div>
-        <button onClick={() => handleAnswer('yes')} style={{ marginRight: '1rem', padding: '0.5rem 1rem' }}>Yes</button>
-        <button onClick={() => handleAnswer('no')} style={{ padding: '0.5rem 1rem' }}>No</button>
-      </div>
-      
-      {answer !== null && (
-        <div style={{ fontSize: '2rem', marginTop: '1rem' }}>
-          {answer}
+    <div className="easter-egg-container">
+      <div className="content-wrapper">
+        <div className="title-text">
+          My Dearest...
         </div>
-      )}
+        
+        <div className="question-text">
+          Will you be my Valentine?
+        </div>
+        
+        <div className="buttons">
+          <button 
+            className="yes-btn"
+            onClick={() => handleAnswer('yes')}>
+            Yes, I will! ❤️
+          </button>
+          <button 
+            className="no-btn"
+            onClick={() => handleAnswer('no')}>
+            No...
+          </button>
+        </div>
+        
+        {answer && (
+          <div className="answer-text">
+            {answer}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
