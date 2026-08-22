@@ -179,12 +179,31 @@ button:focus-visible {
   max-width: 36ch;
 }
 
-.field {
+.saved-names {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 0.9rem;
-  text-align: left;
+  margin-top: 0.5rem;
+}
+
+.saved-name {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.saved-name:hover {
+  border-color: var(--accent);
+}
+
+.saved-name.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 
 .field label {
@@ -615,9 +634,30 @@ button:disabled {
   font-size: 1.1rem;
 }
 
-.digit-row {
+.guess-slots-wrap {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 0.55rem;
+}
+
+.digit-type-input {
+  width: min(100%, 360px);
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-align: center;
+}
+
+.digit-pad.is-compact .digit-type-input {
+  width: min(100%, 280px);
+  padding: 0.55rem 0.7rem;
 }
 
 .digit-slot {

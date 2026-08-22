@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import DigitPad from './DigitPad';
+import SavedNamePicker from './SavedNamePicker';
+import { getLastPlayerName, rememberPlayerName } from '../savedNames';
 
 function Lobby({ onJoinGame, setGameState }) {
   const [lobbies, setLobbies] = useState([]);
@@ -10,43 +12,22 @@ function Lobby({ onJoinGame, setGameState }) {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedLobby, setSelectedLobby] = useState(null);
   const [joinForm, setJoinForm] = useState({
-    playerName: '',
+    playerName: getLastPlayerName(),
     secretNumber: '',
     privateKey: ''
   });
 
   useEffect(() => {
-    const cleanupIdleLobbies = async (lobbyDoc, data) => {
-      const currentTime = Date.now();
-      const timeoutDuration = 3 * 60 * 1000;
-
-      if (currentTime - data.lastActive > timeoutDuration) {
-        try {
-          if (data.gameId) {
-            await deleteDoc(doc(db, 'games', data.gameId));
-          }
-          await deleteDoc(lobbyDoc.ref);
-        } catch (error) {
-          console.error('Error cleaning up idle lobby:', error);
-        }
-        return true;
-      }
-      return false;
-    };
-
     const q = query(
       collection(db, 'lobbies'),
       where('status', '==', 'waiting')
     );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const lobbyList = [];
-      for (const lobbyDoc of snapshot.docs) {
-        const data = lobbyDoc.data();
-        if (!(await cleanupIdleLobbies(lobbyDoc, data))) {
-          lobbyList.push({ id: lobbyDoc.id, ...data });
-        }
-      }
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const lobbyList = snapshot.docs.map((lobbyDoc) => ({
+        id: lobbyDoc.id,
+        ...lobbyDoc.data()
+      }));
       setLobbies(lobbyList.sort((a, b) => b.createdAt - a.createdAt));
       setLoading(false);
     });
@@ -73,6 +54,11 @@ function Lobby({ onJoinGame, setGameState }) {
 
   const handleJoinAttempt = (lobby) => {
     setSelectedLobby(lobby);
+    setJoinForm({
+      playerName: getLastPlayerName(),
+      secretNumber: '',
+      privateKey: ''
+    });
     setShowJoinModal(true);
   };
 
@@ -95,6 +81,8 @@ function Lobby({ onJoinGame, setGameState }) {
     }
 
     try {
+      rememberPlayerName(joinForm.playerName);
+
       await onJoinGame({
         ...selectedLobby,
         joiningPlayer: {
@@ -104,7 +92,7 @@ function Lobby({ onJoinGame, setGameState }) {
       });
 
       setShowJoinModal(false);
-      setJoinForm({ playerName: '', secretNumber: '', privateKey: '' });
+      setJoinForm({ playerName: getLastPlayerName(), secretNumber: '', privateKey: '' });
     } catch (error) {
       console.error('Error joining game:', error);
       alert('Error joining game. Please try again.');
@@ -205,10 +193,14 @@ function Lobby({ onJoinGame, setGameState }) {
                 <input
                   id="join-name"
                   type="text"
-                  placeholder="Sam"
+                  placeholder="sameoldsteven"
                   value={joinForm.playerName}
                   onChange={(e) => setJoinForm({ ...joinForm, playerName: e.target.value })}
                   autoFocus
+                />
+                <SavedNamePicker
+                  value={joinForm.playerName}
+                  onSelect={(playerName) => setJoinForm({ ...joinForm, playerName })}
                 />
               </div>
               <div className="field">

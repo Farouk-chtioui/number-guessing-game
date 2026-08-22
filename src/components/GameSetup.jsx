@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { collection, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import DigitPad from './DigitPad';
+import SavedNamePicker from './SavedNamePicker';
+import { getLastPlayerName, rememberPlayerName } from '../savedNames';
 
 function GameSetup({ setGameState }) {
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(getLastPlayerName);
   const [secretNumber, setSecretNumber] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [gameMode, setGameMode] = useState('classic');
@@ -71,6 +73,8 @@ function GameSetup({ setGameState }) {
         lobbyId: lobbyDoc.id
       });
 
+      rememberPlayerName(playerName);
+
       setGameState({
         isPlaying: true,
         gameId: gameDoc.id,
@@ -103,9 +107,10 @@ function GameSetup({ setGameState }) {
           type="text"
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
-          placeholder="Alex"
+          placeholder="sameoldsteven"
           autoComplete="nickname"
         />
+        <SavedNamePicker value={playerName} onSelect={setPlayerName} />
       </div>
 
       <div className="field">

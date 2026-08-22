@@ -42,6 +42,10 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
   useEffect(() => {
     const gameDoc = doc(db, 'games', gameState.gameId);
     const unsubscribe = onSnapshot(gameDoc, (snapshot) => {
+      if (!snapshot.exists()) {
+        onBackToLobby();
+        return;
+      }
       const gameData = snapshot.data();
       setGame(gameData);
       setCurrentTurn(gameData?.currentTurn || gameData?.firstTurn);
@@ -49,6 +53,25 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
 
     return () => unsubscribe();
   }, [gameState.gameId]);
+
+  useEffect(() => {
+    if (!gameState.gameId) return undefined;
+
+    const bumpActivity = async () => {
+      try {
+        await updateDoc(doc(db, 'games', gameState.gameId), { lastActive: Date.now() });
+        if (gameState.lobbyId) {
+          await updateDoc(doc(db, 'lobbies', gameState.lobbyId), { lastActive: Date.now() });
+        }
+      } catch {
+        // game may already have been removed
+      }
+    };
+
+    bumpActivity();
+    const interval = setInterval(bumpActivity, 30 * 1000);
+    return () => clearInterval(interval);
+  }, [gameState.gameId, gameState.lobbyId]);
 
   useEffect(() => {
     const guessesRef = collection(db, 'games', gameState.gameId, 'guesses');
@@ -255,8 +278,9 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
               disabled={!canGuess}
               onSubmit={handleSubmitGuess}
               submitLabel="Submit guess"
+              autoFocus={canGuess}
             />
-            <div className="legend">Click digits to build a guess. Click a filled slot to remove it.</div>
+            <div className="legend">Click the pad or type 4 unique digits. Enter submits.</div>
           </div>
         )}
 

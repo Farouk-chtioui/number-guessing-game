@@ -10,6 +10,10 @@ function SpectatorView({ gameState, onBackToLobby }) {
   useEffect(() => {
     const gameDoc = doc(db, 'games', gameState.gameId);
     const unsubscribe = onSnapshot(gameDoc, (snapshot) => {
+      if (!snapshot.exists()) {
+        onBackToLobby();
+        return;
+      }
       setGame(snapshot.data());
     });
     return () => unsubscribe();

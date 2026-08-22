@@ -7,6 +7,7 @@ import { db } from './firebase';
 import './App.css';
 import ThemeToggle from './components/ThemeToggle';
 import { clearGameNotes } from './notesStorage';
+import { cleanupStaleGames } from './cleanupStaleGames';
 
 function App() {
   const [gameState, setGameState] = useState(() => {
@@ -28,6 +29,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem('gameState', JSON.stringify(gameState));
   }, [gameState]);
+
+  useEffect(() => {
+    cleanupStaleGames();
+    const interval = setInterval(cleanupStaleGames, 45 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const verifyGameState = async () => {
