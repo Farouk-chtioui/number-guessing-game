@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { collection, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import DigitPad from './DigitPad';
 
-function GameSetup({ setGameState, onLeaveLobby }) {
+function GameSetup({ setGameState }) {
   const [playerName, setPlayerName] = useState('');
   const [secretNumber, setSecretNumber] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
-  const [gameMode, setGameMode] = useState('classic'); // 'classic' or 'rapid'
-  const [privateKey, setPrivateKey] = useState('');
+  const [gameMode, setGameMode] = useState('classic');
+  const [creating, setCreating] = useState(false);
 
   const validateNumber = (num) => {
     if (num.length !== 4) return false;
@@ -15,7 +16,6 @@ function GameSetup({ setGameState, onLeaveLobby }) {
     return digits.size === 4 && /^\d+$/.test(num);
   };
 
-  // Add this function to generate private key
   const generatePrivateKey = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
@@ -32,12 +32,11 @@ function GameSetup({ setGameState, onLeaveLobby }) {
     }
 
     try {
+      setCreating(true);
       const timestamp = Date.now();
       const firstTurn = Math.random() < 0.5 ? 1 : 2;
       const generatedKey = isPrivate ? generatePrivateKey() : null;
-      setPrivateKey(generatedKey);
-      
-      // Create game document first
+
       const gamesRef = collection(db, 'games');
       const gameDoc = await addDoc(gamesRef, {
         player1: playerName,
@@ -53,7 +52,6 @@ function GameSetup({ setGameState, onLeaveLobby }) {
         lastActive: timestamp
       });
 
-      // Then create lobby with game reference
       const lobbiesRef = collection(db, 'lobbies');
       const lobbyDoc = await addDoc(lobbiesRef, {
         player1: playerName,
@@ -69,7 +67,6 @@ function GameSetup({ setGameState, onLeaveLobby }) {
         gameId: gameDoc.id
       });
 
-      // Update game with lobby reference
       await updateDoc(gameDoc, {
         lobbyId: lobbyDoc.id
       });
@@ -87,71 +84,76 @@ function GameSetup({ setGameState, onLeaveLobby }) {
     } catch (error) {
       console.error('Error creating game:', error);
       alert('Error creating game. Please try again.');
+    } finally {
+      setCreating(false);
     }
   };
 
   return (
-    <div className="section max-w-md mx-auto">
-      <div className="space-y-4">
+    <section className="panel panel-pad">
+      <div className="hero-copy">
+        <h2>Host a match</h2>
+        <p>Pick a secret 4-digit code. No repeated digits. Your opponent tries to crack it first.</p>
+      </div>
+
+      <div className="field">
+        <label htmlFor="player-name">Your name</label>
         <input
+          id="player-name"
           type="text"
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
-          placeholder="Enter your name"
-          className="w-full p-3 rounded-lg"
+          placeholder="Alex"
+          autoComplete="nickname"
         />
-        <input
-          type="text"
-          value={secretNumber}
-          onChange={(e) => setSecretNumber(e.target.value)}
-          maxLength={4}
-          placeholder="Enter your 4-digit number"
-          className="w-full p-3 rounded-lg"
-        />
-        
-        <div className="game-options p-4 rounded-lg space-y-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isPrivate}
-              onChange={(e) => setIsPrivate(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span>Private Lobby</span>
-          </label>
-          
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="classic"
-                checked={gameMode === 'classic'}
-                onChange={(e) => setGameMode(e.target.value)}
-                className="w-4 h-4"
-              />
-              <span>Classic Mode</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="rapid"
-                checked={gameMode === 'rapid'}
-                onChange={(e) => setGameMode(e.target.value)}
-                className="w-4 h-4"
-              />
-              <span>Rapid Mode</span>
-            </label>
-          </div>
-        </div>
-
-        <button
-          onClick={handleStartGame}
-          className="w-full py-3 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-        >
-          Create Game
-        </button>
       </div>
-    </div>
+
+      <div className="field">
+        <label>Secret number</label>
+        <DigitPad compact value={secretNumber} onChange={setSecretNumber} />
+      </div>
+
+      <div className="option-stack">
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={isPrivate}
+            onChange={(e) => setIsPrivate(e.target.checked)}
+          />
+          <span>Private lobby {isPrivate ? '· share the code to invite' : ''}</span>
+        </label>
+
+        <div className="mode-switch" role="radiogroup" aria-label="Game mode">
+          <label>
+            <input
+              type="radio"
+              value="classic"
+              checked={gameMode === 'classic'}
+              onChange={(e) => setGameMode(e.target.value)}
+            />
+            Classic
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="rapid"
+              checked={gameMode === 'rapid'}
+              onChange={(e) => setGameMode(e.target.value)}
+            />
+            Rapid
+          </label>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleStartGame}
+        className="btn-primary"
+        disabled={creating}
+      >
+        {creating ? 'Creating…' : 'Create game'}
+      </button>
+    </section>
   );
 }
 

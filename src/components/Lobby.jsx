@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, where, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
+import DigitPad from './DigitPad';
 
-function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
+function Lobby({ onJoinGame, setGameState }) {
   const [lobbies, setLobbies] = useState([]);
   const [activeGames, setActiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [privateCode, setPrivateCode] = useState('');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedLobby, setSelectedLobby] = useState(null);
   const [joinForm, setJoinForm] = useState({
@@ -16,26 +16,24 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
   });
 
   useEffect(() => {
-    // Cleanup function for idle lobbies
-    const cleanupIdleLobbies = async (doc, data) => {
+    const cleanupIdleLobbies = async (lobbyDoc, data) => {
       const currentTime = Date.now();
-      const timeoutDuration = 3 * 60 * 1000; // 3 minutes
+      const timeoutDuration = 3 * 60 * 1000;
 
       if (currentTime - data.lastActive > timeoutDuration) {
         try {
           if (data.gameId) {
             await deleteDoc(doc(db, 'games', data.gameId));
           }
-          await deleteDoc(doc.ref);
+          await deleteDoc(lobbyDoc.ref);
         } catch (error) {
           console.error('Error cleaning up idle lobby:', error);
         }
-        return true; // Lobby was deleted
+        return true;
       }
-      return false; // Lobby is still active
+      return false;
     };
 
-    // Set up listener for public lobbies
     const q = query(
       collection(db, 'lobbies'),
       where('status', '==', 'waiting')
@@ -43,10 +41,10 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const lobbyList = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        if (!(await cleanupIdleLobbies(doc, data))) {
-          lobbyList.push({ id: doc.id, ...data });
+      for (const lobbyDoc of snapshot.docs) {
+        const data = lobbyDoc.data();
+        if (!(await cleanupIdleLobbies(lobbyDoc, data))) {
+          lobbyList.push({ id: lobbyDoc.id, ...data });
         }
       }
       setLobbies(lobbyList.sort((a, b) => b.createdAt - a.createdAt));
@@ -57,7 +55,6 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
   }, []);
 
   useEffect(() => {
-    // Listen for active games
     const activeGamesQuery = query(
       collection(db, 'games'),
       where('status', '==', 'playing')
@@ -65,42 +62,14 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
 
     const unsubscribe = onSnapshot(activeGamesQuery, (snapshot) => {
       const games = [];
-      snapshot.forEach((doc) => {
-        games.push({ id: doc.id, ...doc.data() });
+      snapshot.forEach((gameDoc) => {
+        games.push({ id: gameDoc.id, ...gameDoc.data() });
       });
       setActiveGames(games.sort((a, b) => b.createdAt - a.createdAt));
     });
 
     return () => unsubscribe();
   }, []);
-
-  const handleJoinPrivate = async () => {
-    if (!privateCode.trim()) {
-      alert('Please enter a lobby code');
-      return;
-    }
-
-    try {
-      const lobbyDoc = doc(db, 'lobbies', privateCode);
-      const lobbySnap = await getDoc(lobbyDoc);
-
-      if (!lobbySnap.exists()) {
-        alert('Lobby not found');
-        return;
-      }
-
-      const lobbyData = lobbySnap.data();
-      if (lobbyData.status !== 'waiting' || lobbyData.player2) {
-        alert('This lobby is no longer available');
-        return;
-      }
-
-      onJoinGame({ id: privateCode, ...lobbyData });
-    } catch (error) {
-      console.error('Error joining private lobby:', error);
-      alert('Error joining private lobby');
-    }
-  };
 
   const handleJoinAttempt = (lobby) => {
     setSelectedLobby(lobby);
@@ -109,13 +78,12 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
 
   const handleJoinSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!joinForm.playerName.trim() || !joinForm.secretNumber.trim()) {
       alert('Please fill in all fields');
       return;
     }
 
-    // Only check private key if lobby is private
     if (selectedLobby.isPrivate && joinForm.privateKey !== selectedLobby.privateKey) {
       alert('Invalid private key');
       return;
@@ -145,7 +113,6 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
 
   const handleSpectate = async (game) => {
     try {
-      // Update game state for spectator mode
       setGameState({
         isPlaying: true,
         inLobby: false,
@@ -161,169 +128,130 @@ function Lobby({ onJoinGame, setGameState }) { // Add setGameState prop
     }
   };
 
-  if (loading) return <div className="lobby"><h2>Loading available games...</h2></div>;
-
   return (
-    <div className="space-y-8">
-      <div className="lobby">
-        <h2 className="text-2xl font-bold mb-6">Available Games</h2>
-        
-        {lobbies.length === 0 ? (
-          <p className="text-center text-gray-600 dark:text-gray-400">
-            No games available. Create one to start playing!
-          </p>
+    <div className="stack">
+      <section className="panel panel-pad">
+        <div className="section-title">
+          <h2>Open lobbies</h2>
+          <span>{loading ? 'Loading' : `${lobbies.length} waiting`}</span>
+        </div>
+
+        {loading ? (
+          <p className="empty-state">Looking for matches…</p>
+        ) : lobbies.length === 0 ? (
+          <p className="empty-state">No open games. Host one on the left to start.</p>
         ) : (
-          <div className="space-y-4">
-            {lobbies.map(lobby => (
-              <div key={lobby.id} 
-                className="lobby-item flex items-center justify-between hover:scale-[1.02] transition-transform"
-              >
+          <div className="lobby-list">
+            {lobbies.map((lobby) => (
+              <div key={lobby.id} className="lobby-item">
                 <div className="lobby-info">
-                  <div className="flex items-center">
-                    <span className="player-name text-lg">{lobby.player1}'s game</span>
-                    {lobby.isPrivate && (
-                      <span className="ml-2 text-blue-500" title="Private lobby">
-                        🔒
-                      </span>
-                    )}
+                  <div className="player-name">
+                    {lobby.player1}
+                    {lobby.isPrivate && <span className="lock" title="Private lobby"> 🔒</span>}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <span>{lobby.gameMode} Mode</span>
+                  <div className="meta-row">
+                    <span>{lobby.gameMode} mode</span>
                     <span>•</span>
-                    <span>
-                      {new Date(lobby.createdAt).toLocaleTimeString()}
-                    </span>
+                    <span>{new Date(lobby.createdAt).toLocaleTimeString()}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleJoinAttempt(lobby)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Join Game
+                <button type="button" onClick={() => handleJoinAttempt(lobby)} className="btn-primary">
+                  Join
                 </button>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="lobby">
-        <h2 className="text-2xl font-bold mb-6">Active Games</h2>
+      <section className="panel panel-pad">
+        <div className="section-title">
+          <h2>Live matches</h2>
+          <span>{activeGames.length} in play</span>
+        </div>
         {activeGames.length === 0 ? (
-          <p className="text-center text-gray-600 dark:text-gray-400">
-            No active games to spectate
-          </p>
+          <p className="empty-state">Nothing to spectate yet.</p>
         ) : (
-          <div className="space-y-4">
-            {activeGames.map(game => (
-              <div key={game.id} 
-                className="lobby-item flex items-center justify-between hover:scale-[1.02] transition-transform"
-              >
+          <div className="lobby-list">
+            {activeGames.map((game) => (
+              <div key={game.id} className="lobby-item">
                 <div className="lobby-info">
-                  <div className="flex items-center">
-                    <span className="player-name text-lg">{game.player1} vs {game.player2}</span>
-                    <span className="ml-3 px-2 py-1 bg-green-100 dark:bg-green-900 
-                                   text-green-800 dark:text-green-200 rounded-full text-sm">
-                      Live
-                    </span>
+                  <div className="player-name">
+                    {game.player1} vs {game.player2}
+                    <span className="pill-live" style={{ marginLeft: '0.5rem' }}>Live</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <span>{game.gameMode} Mode</span>
+                  <div className="meta-row">
+                    <span>{game.gameMode} mode</span>
                     <span>•</span>
                     <span>Started {new Date(game.createdAt).toLocaleTimeString()}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleSpectate(game)}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg 
-                           hover:bg-green-600 transition-colors"
-                >
+                <button type="button" onClick={() => handleSpectate(game)} className="btn-ghost">
                   Spectate
                 </button>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       {showJoinModal && (
         <div className="modal-overlay" onClick={() => setShowJoinModal(false)}>
-          <div className="join-modal max-w-md w-full bg-white dark:bg-slate-800 rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-                Join {selectedLobby?.player1}'s Game
-              </h3>
-              <form onSubmit={handleJoinSubmit} className="space-y-4">
-                <div>
+          <div className="join-modal panel" onClick={(e) => e.stopPropagation()}>
+            <h3>{`Join ${selectedLobby?.player1}'s game`}</h3>
+            <form onSubmit={handleJoinSubmit}>
+              <div className="field">
+                <label htmlFor="join-name">Your name</label>
+                <input
+                  id="join-name"
+                  type="text"
+                  placeholder="Sam"
+                  value={joinForm.playerName}
+                  onChange={(e) => setJoinForm({ ...joinForm, playerName: e.target.value })}
+                  autoFocus
+                />
+              </div>
+              <div className="field">
+                <label>Your secret number</label>
+                <DigitPad
+                  compact
+                  value={joinForm.secretNumber}
+                  onChange={(secretNumber) => setJoinForm({ ...joinForm, secretNumber })}
+                />
+              </div>
+              {selectedLobby?.isPrivate && (
+                <div className="field">
+                  <label htmlFor="join-key">Private key</label>
                   <input
+                    id="join-key"
                     type="text"
-                    placeholder="Your name"
-                    value={joinForm.playerName}
-                    onChange={(e) => setJoinForm({
-                      ...joinForm,
-                      playerName: e.target.value
-                    })}
-                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600
-                             bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                    autoFocus
+                    placeholder="Lobby code"
+                    value={joinForm.privateKey}
+                    onChange={(e) => setJoinForm({ ...joinForm, privateKey: e.target.value })}
+                    className="mono-input"
                   />
                 </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Your 4-digit number"
-                    maxLength={4}
-                    value={joinForm.secretNumber}
-                    onChange={(e) => setJoinForm({
-                      ...joinForm,
-                      secretNumber: e.target.value
-                    })}
-                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600
-                             bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                {selectedLobby?.isPrivate && (
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="Private key"
-                      value={joinForm.privateKey}
-                      onChange={(e) => setJoinForm({
-                        ...joinForm,
-                        privateKey: e.target.value
-                      })}
-                      className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600
-                               bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                )}
-                <div className="flex gap-3 mt-6">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg
-                             transition-colors duration-200"
-                  >
-                    Join Game
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSpectate(selectedLobby)}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg
-                             transition-colors duration-200"
-                  >
-                    Spectate
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowJoinModal(false)}
-                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg
-                             transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+              )}
+              <div className="modal-actions">
+                <button type="submit" className="btn-primary span-2">
+                  Join game
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSpectate(selectedLobby)}
+                  className="btn-ghost"
+                >
+                  Spectate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowJoinModal(false)}
+                  className="btn-ghost"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
