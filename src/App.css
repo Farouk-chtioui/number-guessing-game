@@ -616,34 +616,50 @@ button:disabled {
 }
 
 .guess-slots-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.digit-row {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: center;
+  gap: 0.45rem;
 }
 
 .digit-type-input {
-  width: min(100%, 360px);
-  padding: 0.65rem 0.85rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0.28em;
-  text-align: center;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0.01;
+  border: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  cursor: text;
 }
 
-.digit-pad.is-compact .digit-type-input {
-  width: min(100%, 280px);
-  padding: 0.55rem 0.7rem;
+.field .digit-type-input,
+.join-modal .digit-type-input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  letter-spacing: normal;
+  text-align: left;
+  font-size: 1px;
 }
 
 .digit-slot {
-  width: 64px;
-  height: 76px;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -651,7 +667,7 @@ button:disabled {
   border: 1px solid var(--line);
   background: var(--surface);
   font-family: var(--mono);
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--ink);
   padding: 0;

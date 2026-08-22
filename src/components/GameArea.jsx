@@ -282,7 +282,7 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
               submitLabel="Submit guess"
               autoFocus={canGuess}
             />
-            <div className="legend">Click the pad or type 4 unique digits. Enter submits.</div>
+            <div className="legend">Click the pad or type. Four boxes, one number.</div>
           </div>
         )}
 
