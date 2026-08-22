@@ -190,17 +190,11 @@ function Lobby({ onJoinGame, setGameState }) {
             <form onSubmit={handleJoinSubmit}>
               <div className="field">
                 <label htmlFor="join-name">Your name</label>
-                <input
-                  id="join-name"
-                  type="text"
-                  placeholder="sameoldsteven"
-                  value={joinForm.playerName}
-                  onChange={(e) => setJoinForm({ ...joinForm, playerName: e.target.value })}
-                  autoFocus
-                />
                 <SavedNamePicker
+                  id="join-name"
                   value={joinForm.playerName}
-                  onSelect={(playerName) => setJoinForm({ ...joinForm, playerName })}
+                  onChange={(playerName) => setJoinForm({ ...joinForm, playerName })}
+                  autoFocus
                 />
               </div>
               <div className="field">

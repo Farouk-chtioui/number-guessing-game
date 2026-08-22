@@ -1,23 +1,27 @@
 import { getSavedNames } from '../savedNames';
 
-function SavedNamePicker({ value, onSelect }) {
+function SavedNamePicker({ id, value, onChange, autoFocus = false }) {
   const names = getSavedNames();
-  if (names.length === 0) return null;
+  const listId = `${id}-saved`;
 
   return (
-    <div className="saved-names" role="list" aria-label="Saved names">
-      {names.map((name) => (
-        <button
-          key={name}
-          type="button"
-          role="listitem"
-          className={`saved-name ${value === name ? 'is-selected' : ''}`}
-          onClick={() => onSelect(name)}
-        >
-          {name}
-        </button>
-      ))}
-    </div>
+    <>
+      <input
+        id={id}
+        list={listId}
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="sameoldsteven"
+        autoComplete="off"
+        autoFocus={autoFocus}
+      />
+      <datalist id={listId}>
+        {names.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+    </>
   );
 }
 

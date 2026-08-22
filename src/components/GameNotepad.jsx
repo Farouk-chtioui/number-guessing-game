@@ -14,7 +14,7 @@ function nextStatus(status) {
   return STATUS_ORDER[(index + 1) % STATUS_ORDER.length];
 }
 
-function GameNotepad({ gameId, playerId }) {
+function GameNotepad({ gameId, playerId, canGuess = false, onUseGuess, onSubmitGuess }) {
   const [board, setBoard] = useState(defaultNotes);
   const [open, setOpen] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 1025 : true
@@ -90,6 +90,20 @@ function GameNotepad({ gameId, playerId }) {
     persist(defaultNotes());
   };
 
+  const alignment = board.slots.every((slot) => slot != null) ? board.slots.join('') : '';
+  const canTakeGuess = alignment.length === 4 && new Set(alignment).size === 4;
+
+  const useAsGuess = () => {
+    if (!canTakeGuess || !onUseGuess) return;
+    onUseGuess(alignment);
+  };
+
+  const submitAlignment = () => {
+    if (!canTakeGuess || !onSubmitGuess) return;
+    onUseGuess?.(alignment);
+    onSubmitGuess(alignment);
+  };
+
   return (
     <>
       <button
@@ -124,7 +138,7 @@ function GameNotepad({ gameId, playerId }) {
 
         <div className="notepad-body">
           <p className="notepad-help">
-            Click <strong>Mark</strong> to color a digit. Click the number, then a slot, to place it.
+            Click <strong>Mark</strong> to color a digit. Click a number, then a slot, to build a guess.
           </p>
 
           <div className="mark-legend" aria-hidden="true">
@@ -183,6 +197,24 @@ function GameNotepad({ gameId, playerId }) {
                   {value ?? '_'}
                 </button>
               ))}
+            </div>
+            <div className="notepad-guess-actions">
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={useAsGuess}
+                disabled={!canTakeGuess}
+              >
+                Use as guess
+              </button>
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={submitAlignment}
+                disabled={!canTakeGuess || !canGuess}
+              >
+                Submit this guess
+              </button>
             </div>
           </div>
         </div>

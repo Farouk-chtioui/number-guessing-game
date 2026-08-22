@@ -179,31 +179,12 @@ button:focus-visible {
   max-width: 36ch;
 }
 
-.saved-names {
+.field {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.4rem;
-  margin-top: 0.5rem;
-}
-
-.saved-name {
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--bg);
-  color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.saved-name:hover {
-  border-color: var(--accent);
-}
-
-.saved-name.is-selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  margin-bottom: 0.9rem;
+  text-align: left;
 }
 
 .field label {
@@ -1063,6 +1044,20 @@ button.digit-slot:disabled {
 
 .align-slot:hover {
   border-color: var(--accent);
+}
+
+.notepad-guess-actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.notepad-guess-actions .btn-primary,
+.notepad-guess-actions .btn-ghost {
+  width: auto;
+  flex: 1;
+  padding: 0.55rem 0.4rem;
+  font-size: 0.82rem;
 }
 
 .notepad-footer {

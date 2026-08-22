@@ -114,13 +114,15 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
     onBackToLobby();
   };
 
-  const handleSubmitGuess = async () => {
+  const handleSubmitGuess = async (nextGuess) => {
+    const guessValue = typeof nextGuess === 'string' ? nextGuess : guess;
+
     if (game.gameMode === 'classic' && currentTurn !== gameState.playerId) {
       alert("It's not your turn!");
       return;
     }
 
-    if (!validateGuess(guess)) {
+    if (!validateGuess(guessValue)) {
       alert('Please enter a valid 4-digit number with no repeating digits');
       return;
     }
@@ -139,12 +141,12 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
       });
 
       const opponentNumber = gameState.playerId === 1 ? gameData.player2Number : gameData.player1Number;
-      const result = checkGuess(guess, opponentNumber);
+      const result = checkGuess(guessValue, opponentNumber);
 
       const guessesRef = collection(db, 'games', gameState.gameId, 'guesses');
       await addDoc(guessesRef, {
         player: gameState.playerId,
-        guess,
+        guess: guessValue,
         result,
         timestamp: Date.now()
       });
@@ -338,7 +340,13 @@ function PlayerGameArea({ gameState, onBackToLobby }) {
         </div>
       </div>
 
-      <GameNotepad gameId={gameState.gameId} playerId={gameState.playerId} />
+      <GameNotepad
+        gameId={gameState.gameId}
+        playerId={gameState.playerId}
+        canGuess={canGuess}
+        onUseGuess={setGuess}
+        onSubmitGuess={handleSubmitGuess}
+      />
     </div>
   );
 }

@@ -102,15 +102,7 @@ function GameSetup({ setGameState }) {
 
       <div className="field">
         <label htmlFor="player-name">Your name</label>
-        <input
-          id="player-name"
-          type="text"
-          value={playerName}
-          onChange={(e) => setPlayerName(e.target.value)}
-          placeholder="sameoldsteven"
-          autoComplete="nickname"
-        />
-        <SavedNamePicker value={playerName} onSelect={setPlayerName} />
+        <SavedNamePicker id="player-name" value={playerName} onChange={setPlayerName} />
       </div>
 
       <div className="field">
